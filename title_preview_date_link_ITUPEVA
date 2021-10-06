@@ -1,0 +1,38 @@
+import json #biblioteca json pra exportar os dados
+import requests #biblioteca requests pra fazer requisições no navegador
+from bs4 import BeautifulSoup #biblioteca pra limpar o html
+
+headers = {
+    'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36 OPR/79.0.4143.73"} #código padrão pra usar algum dos navegadores em questão
+
+res = requests.get("https://itupeva.sp.gov.br/noticias") #chamar a URL que eu vou trabalhar
+res.encoding= 'UTF-8'
+
+soup = BeautifulSoup(res.text, 'html.parser')
+
+all_pages = [] #cria uma lista vazia de todas as paginas
+for link in range(1, 679): #percorrendo 678 paginas concatenando o link principal
+    url = f'itupeva.sp.gov.br/noticias?&pagina={link}' #percorrendo 678 paginas concatenando o link principal
+    page = url #atribuindo url a variavel page
+    all_pages.append(BeautifulSoup(page, 'html.parser')) #renderizando a variavel com todas as paginas no beautifulsoup
+
+all_post = []
+for posts in all_pages:
+    posts = soup.find_all(class_="list-item noticias")  # procura todas as noticias
+    for post in posts: #pega um post de todos os posts
+        info = post.find(class_="list-item__info") #transforma cada noticia em info
+        title = info.h3.text.strip() #busca pelo title passando o info
+        preview_date = info.p.text.strip() #busca pelo preview, nesse caso veio a data e hora
+        preview_text = info.find(class_="list-item__description").text.strip() #não deu pra buscar pelo P então usamos o find para obter o preview
+        link_notice = info.find(class_="list-item__link").get('href') #pegando somente os links
+        #img = info.find(class_='list-item__img')['src'].img
+        #print(title, preview_date, preview_text, link_notice) #teste pra ver cada informação
+        all_post.append({'title': title,
+                         'date': preview_date,
+                         'preview': preview_text,
+                         'link_notice': link_notice})
+
+with open('posts.json', 'w') as json_file: #salva todos os posts no json
+    json.dump(all_post, json_file)
+
+
